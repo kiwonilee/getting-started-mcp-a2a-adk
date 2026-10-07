@@ -173,3 +173,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 .adk/
+
+# A2A Agent Cards
+agent.json
+card.json

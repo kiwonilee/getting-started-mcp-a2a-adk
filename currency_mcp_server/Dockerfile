@@ -1,20 +1,19 @@
 # Use the official Python lightweight image
-FROM python:3.13-slim
+FROM python:3.11-slim
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-# Install the project into /app
-COPY . /app
 WORKDIR /app
 
 # Allow statements and log messages to immediately appear in the logs
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PORT=8080
 
-# Install dependencies
-RUN uv sync
+# Copy application files
+COPY . /app
+
+# Install dependencies directly using standard pip
+RUN pip install --no-cache-dir "fastmcp>=4.0.0" "httpx>=0.28.1"
 
 EXPOSE 8080
 
-# Run the FastMCP server
-CMD ["uv", "run", "python", "server.py"]
+# Run the FastMCP server directly with python
+CMD ["python", "server.py"]

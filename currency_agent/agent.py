@@ -1,10 +1,8 @@
 import logging
 import os
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
-from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
 logger = logging.getLogger(__name__)
@@ -41,24 +39,6 @@ root_agent = LlmAgent(
     ],
 )
 
-# Make the agent A2A-compatible
-PORT = int(os.getenv("PORT", 8081))
-AGENT_URL = os.getenv("AGENT_URL")
+# Make the agent definition pure ADK.
+# Serving and A2A exposure are managed via ADK CLI (adk api_server --a2a, adk deploy cloud_run --a2a).
 
-if AGENT_URL:
-    parsed = urlparse(AGENT_URL)
-    protocol = parsed.scheme or "https"
-    host = parsed.hostname
-    port = parsed.port or 443
-else:
-    protocol = "http"
-    host = "localhost"
-    port = PORT
-
-a2a_app = to_a2a(root_agent, host=host, port=port, protocol=protocol)
-
-if __name__ == "__main__":
-    import uvicorn
-
-    logger.info(f"🚀 Starting currency_agent on port {PORT}")
-    uvicorn.run(a2a_app, host="0.0.0.0", port=PORT)

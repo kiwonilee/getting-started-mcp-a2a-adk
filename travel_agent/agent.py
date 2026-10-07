@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
-from google.adk.agents.remote_a2a_agent import RemoteA2aAgent, AGENT_CARD_WELL_KNOWN_PATH
+from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 
 try:
     from travel_agent.subagents.weather_agent import weather_agent
@@ -24,16 +24,26 @@ SYSTEM_INSTRUCTION = (
     "delegate the request to the 'weather_agent' tool."
 )
 
-CURRENCY_AGENT_URL = os.getenv("CURRENCY_AGENT_URL", "http://localhost:8081").rstrip("/")
+def _resolve_currency_card_url(raw_url: str) -> str:
+    url = raw_url.rstrip("/")
+    if url.endswith("/.well-known/agent-card.json") or url.endswith("/agent.json"):
+        return url
+    if not url.endswith("/a2a/currency_agent"):
+        url = f"{url}/a2a/currency_agent"
+    return f"{url}/.well-known/agent-card.json"
+
+
+CURRENCY_AGENT_URL = os.getenv("CURRENCY_AGENT_URL", "http://localhost:8081")
+currency_card_url = _resolve_currency_card_url(CURRENCY_AGENT_URL)
 
 logger.info(
-    "--- 🔗 Connecting to Remote A2A Currency Agent at %s... ---",
-    CURRENCY_AGENT_URL,
+    "--- 🔗 Connecting to Remote A2A Currency Agent at %s ---",
+    currency_card_url,
 )
 
 currency_remote_agent = RemoteA2aAgent(
     name="currency_agent",
-    agent_card=f"{CURRENCY_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}",
+    agent_card=currency_card_url,
     description="An agent that can help with currency conversions and exchange rates.",
 )
 
@@ -50,11 +60,3 @@ root_agent = LlmAgent(
     ],
 )
 
-if __name__ == "__main__":
-    import uvicorn
-    from google.adk.cli.fast_api import get_fast_api_app
-
-    PORT = int(os.getenv("PORT", 8082))
-    logger.info(f"🚀 Starting travel_agent Web UI on port {PORT}")
-    app = get_fast_api_app(web=True, agents_dir=os.path.dirname(__file__) or ".")
-    uvicorn.run(app, host="0.0.0.0", port=PORT)

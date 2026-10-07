@@ -10,7 +10,15 @@ from a2a.client import A2ACardResolver, ClientConfig, create_client
 from a2a.helpers import display_agent_card, new_text_message
 from a2a.types import Role, SendMessageRequest
 
-AGENT_URL = os.getenv("AGENT_URL", "http://localhost:8081")
+def _resolve_base_url(raw_url: str) -> str:
+    url = raw_url.rstrip("/")
+    if not url.endswith("/a2a/currency_agent") and not url.endswith("/.well-known/agent-card.json"):
+        url = f"{url}/a2a/currency_agent"
+    return url
+
+
+RAW_AGENT_URL = os.getenv("AGENT_URL", "http://localhost:8081")
+AGENT_URL = _resolve_base_url(RAW_AGENT_URL)
 
 
 async def get_agent_card():

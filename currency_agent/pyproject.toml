@@ -12,3 +12,7 @@ dependencies = [
     "uvicorn>=0.35.0",
     "sse-starlette>=3.0.0",
 ]
+
+[tool.setuptools]
+py-modules = ["agent", "generate_card"]
+
