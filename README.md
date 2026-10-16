@@ -119,7 +119,7 @@ ADK는 핵심 오케스트레이션 프레임워크로 사용됩니다. 에이�
 
 1. 리포지토리 클론:
    ```bash
-   git clone https://github.com/kiwonlee/getting-started-mcp-a2a-adk.git
+   git clone https://github.com/kiwonilee/getting-started-mcp-a2a-adk.git
    cd getting-started-mcp-a2a-adk
    ```
 
@@ -176,7 +176,7 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNum
 gcloud iam service-accounts create $SA_NAME \
     --display-name="Getting-started-mcp-a2a-adk Service Account"
 
-# 2. 런타임(Vertex AI, 로깅) 및 빌드 권한 부여
+# 2. 런타임(aiplatform, 로깅) 및 빌드 권한 부여
 for ROLE in \
   roles/aiplatform.user \
   roles/logging.logWriter \
@@ -301,13 +301,30 @@ echo "Travel Agent Web UI URL: $TRAVEL_AGENT_URL"
 
 ### Step 5: 프로덕션 환경 검증
 
-1. **A2A 직접 호출 테스트**:
+코드베이스에 포함된 테스트 스크립트를 사용하여 배포된 각 컴포넌트를 단계별로 검증할 수 있습니다:
+
+1. **MCP 서버 직접 테스트 (`test_server.py`)**:
+   Cloud Run에 배포된 FastMCP 서버가 정상 동작하고 `get_exchange_rate` 도구를 제공하는지 테스트합니다:
+   ```bash
+   MCP_SERVER_URL="$MCP_SERVER_URL" uv run python currency_mcp_server/test_server.py
+   ```
+   *(curl을 통한 빠른 헬스체크)*:
+   ```bash
+   # 정상 응답 시 {"jsonrpc":"2.0",...}이 반환됩니다
+   curl "$MCP_SERVER_URL"
+   ```
+
+2. **A2A Currency Agent 직접 테스트 (`test_a2aclient.py`)**:
+   Cloud Run에 배포된 `currency-agent`가 A2A 프로토콜 규격으로 Agent Card를 반환하고, A2A 클라이언트의 질의를 받아 MCP 도구를 호출하는지 검증합니다:
    ```bash
    AGENT_URL="$CURRENCY_AGENT_URL" uv run python currency_agent/test_a2aclient.py
    ```
 
-2. **Web UI 테스트**:
-   브라우저에서 `$TRAVEL_AGENT_URL` 주소로 접속하여 Cloud Run에서 구동 중인 멀티 에이전트 시스템 전체 흐름을 테스트합니다!
+3. **Travel Agent Web UI 엔드투엔드(E2E) 테스트**:
+   브라우저에서 `$TRAVEL_AGENT_URL` 주소로 접속하여 전체 멀티 에이전트 시스템을 통합 검증합니다!
+   - `travel_agent` Web UI 로드
+   - 로컬 `weather_agent`를 통한 날씨 조회 (in-process)
+   - 원격 `currency_agent`를 통한 환율 계산 (A2A -> MCP 통신)
    > 예시 질문: *"도쿄로 여행을 가려고 해. 날씨는 어떻고 500달러는 엔화로 얼마야?"*
 
 ---
@@ -438,7 +455,7 @@ Project dependencies are organized as a unified **`uv` Workspace**:
 
 1. Clone repository:
    ```bash
-   git clone https://github.com/kiwonlee/getting-started-mcp-a2a-adk.git
+   git clone https://github.com/kiwonilee/getting-started-mcp-a2a-adk.git
    cd getting-started-mcp-a2a-adk
    ```
 
@@ -495,7 +512,7 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNum
 gcloud iam service-accounts create $SA_NAME \
     --display-name="Getting-started-mcp-a2a-adk Service Account"
 
-# 2. Grant runtime (Vertex AI, Logging) and build permissions to the dedicated SA
+# 2. Grant runtime (aiplatform, Logging) and build permissions to the dedicated SA
 for ROLE in \
   roles/aiplatform.user \
   roles/logging.logWriter \
@@ -620,13 +637,31 @@ echo "Travel Agent Web UI URL: $TRAVEL_AGENT_URL"
 
 ### Step 5: Verify in Production
 
-1. **A2A Direct Test**:
+Verify each deployed component step-by-step using the test scripts included in the repository:
+
+1. **MCP Server Direct Test (`test_server.py`)**:
+   Verify that the FastMCP server is active and the `get_exchange_rate` tool responds properly:
+   ```bash
+   MCP_SERVER_URL="$MCP_SERVER_URL" uv run python currency_mcp_server/test_server.py
+   ```
+   *(Quick curl health check)*:
+   ```bash
+   # Returns {"jsonrpc":"2.0",...} on success
+   curl "$MCP_SERVER_URL"
+   ```
+
+2. **A2A Currency Agent Direct Test (`test_a2aclient.py`)**:
+   Verify that `currency-agent` serves the A2A Agent Card and handles JSON-RPC agent queries via MCP tools:
    ```bash
    AGENT_URL="$CURRENCY_AGENT_URL" uv run python currency_agent/test_a2aclient.py
    ```
 
-2. **Web UI Test**:
+3. **Travel Agent Web UI End-to-End Test**:
    Open `$TRAVEL_AGENT_URL` in your browser and test the full multi-agent flow live on Cloud Run!
+   - Web UI loaded from `travel-agent`
+   - In-process weather lookup via local `weather_agent`
+   - Remote A2A delegation to `currency-agent` (which calls `currency-mcp-server`)
+   > Sample prompt: *"I'm planning a trip to Tokyo. What is the weather like and how much is 500 USD in JPY?"*
 
 ---
 
